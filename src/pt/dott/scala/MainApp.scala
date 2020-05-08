@@ -5,6 +5,7 @@ import java.time.format.{DateTimeFormatter, DateTimeParseException}
 
 import pt.dott.scala.calculator.OrdersCalculator
 import pt.dott.scala.repository.OrdersRepository
+import pt.dott.scala.validator.ValidationUtils
 
 import scala.collection.mutable.ListBuffer
 
@@ -16,27 +17,25 @@ object MainApp {
 
   def main(args: Array[String]): Unit = {
 
-    if(lessParameters(args)) return
+    if(lessParameters(args) || !validateDates(args)){
+      ValidationUtils.printInvalidDateParametersMessages()
+      return
+    }
 
-    if(!validateDates(args)) return
 
     val repository = new OrdersRepository(startDate, endDate)
     calculateOrders(repository, args)
-
 
   }
 
   def calculateOrders(repository: OrdersRepository, args: Array[String]) ={
     val customIntervals = new CustomIntervals(args)
     customIntervals.validateArgs(args)
+    println("RESULT DEFAULT INTERVALS: \n")
+    calculateOrdersDefaultInterval(repository)
     if(customIntervals.intervalsList.nonEmpty){
-      println("RESULT DEFAULT INTERVALS: \n")
-      calculateOrdersDefaultInterval(repository)
       println("\nRESULT CUSTOM INTERVALS: \n")
       calculateOrdersCustomIntervals(repository, customIntervals.intervalsList.toList)
-    }else{
-      println("RESULT DEFAULT INTERVALS: \n")
-      calculateOrdersDefaultInterval(repository)
     }
   }
 
@@ -44,7 +43,7 @@ object MainApp {
     val calculatorList = ListBuffer[OrdersCalculator]()
 
     for(interval <- intervals){
-      calculatorList.addOne(new OrdersCalculator(interval(0), interval(1), repository))
+      calculatorList.+=(new OrdersCalculator(interval(0), interval(1), repository))
     }
 
     runThreads(calculatorList.toList)
@@ -53,10 +52,10 @@ object MainApp {
   def calculateOrdersDefaultInterval(repository: OrdersRepository)={
     val calculatorList = ListBuffer[OrdersCalculator]()
 
-    calculatorList+=(new OrdersCalculator("1", "3", repository))
-    calculatorList+=(new OrdersCalculator("4", "6", repository))
-    calculatorList+=(new OrdersCalculator("7", "12", repository))
-    calculatorList+=(new OrdersCalculator(">", "12", repository))
+    calculatorList.+=(new OrdersCalculator("1", "3", repository))
+    calculatorList.+=(new OrdersCalculator("4", "6", repository))
+    calculatorList.+=(new OrdersCalculator("7", "12", repository))
+    calculatorList.+=(new OrdersCalculator(">", "12", repository))
 
     runThreads(calculatorList.toList)
   }
@@ -81,40 +80,28 @@ object MainApp {
   }
 
   def checkIntegerValue(value:String):String ={
-    var valueReturn = "-"
     try{
       Integer.parseInt(value)
+      "-"
     }catch{
-      case e: NumberFormatException => valueReturn = ""
-
+      case e: NumberFormatException => ""
     }
-    valueReturn
   }
 
   def lessParameters(args: Array[String]): Boolean ={
-    var areLess = true
-    if(args.length < 2){
-      println("Parameters not valid. You should provide two parameters, startDate and endDate in this date format YYYY-MM-DD HH:MM:SS")
-      areLess = true
-    } else{
-      areLess = false
-    }
-    areLess
+    args.length<2
   }
 
   def validateDates(args: Array[String]): Boolean ={
-    var valid = false
     val formatter = DateTimeFormatter.ofPattern(dateFormat)
-
     try{
       startDate = LocalDateTime.parse(args(0), formatter)
       endDate = LocalDateTime.parse(args(1), formatter)
+      true
     }catch{
-      case e: DateTimeParseException => println("Date format is invalid. Check provided dates and try again")
-        valid = false
+      case e: DateTimeParseException => false
     }
-    valid = true
-    valid
+
   }
 
 

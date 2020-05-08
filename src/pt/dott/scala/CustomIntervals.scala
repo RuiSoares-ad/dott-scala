@@ -1,5 +1,7 @@
 package pt.dott.scala
 
+import pt.dott.scala.validator.ValidationUtils
+
 import scala.collection.mutable.ListBuffer
 
 class CustomIntervals(args: Array[String]) {
@@ -7,56 +9,49 @@ class CustomIntervals(args: Array[String]) {
   var intervalsList = ListBuffer[Array[String]]()
 
   def validateArgs(args: Array[String])={
-
-    for(s <- args){
-      if(s.contains("-")){
-        val interval = s.split("-")
-        if(validIntervalLength(null, interval)){
-          if(validateInterval(interval)){
-            intervalsList.+=(interval)
-          }
-        }
+    var invalid = ListBuffer[String]()
+    for(i<- 2 until args.length){
+      if(args(i).contains("-")){
+        val interval = args(i).split("-")
+        if(validate(interval))intervalsList.+=(interval)
+        else invalid.+=(args(i))
       }
-      var comparator = ""
-      if(s.contains(">") || s.contains("<")){
-        comparator = String.valueOf(s.charAt(0))
-        val interval = s.split(comparator)
-        if(validIntervalLength(comparator, interval)){
-          if(validIntervalComparator(interval)){
-            interval(0) = comparator
-            intervalsList.+=(interval)
-          }
-        }
-      }
+      else if(args(i).contains(">") || args(i).contains("<")){
+        val comparator = String.valueOf(args(i).charAt(0))
+        val interval = args(i).split(comparator)
+        if(validate(interval)){
+          interval(0) = comparator
+          intervalsList.+=(interval)
+        } else {invalid.+=(args(i))}
+      } else {invalid.+=(args(i))}
     }
+    ValidationUtils.printInvalidIntervalParameters(invalid.toList)
   }
 
+  def validate(interval: Array[String]): Boolean = {
+    validIntervalLength(interval) && (validateInterval(interval) || validIntervalComparator(interval))
+  }
   def validateInterval(interval: Array[String]): Boolean = {
-    var valid = false
     for(s <- interval)
       try{
         Integer.parseInt(s)
-        valid = true
       }catch{
-        case e: NumberFormatException => println("Insert a valid number")
-          valid = false
+        case e: NumberFormatException => false
       }
-    valid
+    true
   }
 
   def validIntervalComparator(interval: Array[String]): Boolean = {
-    var valid = false
     try{
       Integer.parseInt(interval(1))
-      valid = true
+      true
     }catch{
-      case e: NumberFormatException => println("Insert a valid number")
-        valid = false
+      case e: NumberFormatException => false
     }
-    valid
+
   }
 
-  def validIntervalLength(comparator: String, interval: Array[String]):Boolean = interval.length==2
+  def validIntervalLength(interval: Array[String]):Boolean = interval.length==2
 
 
 }

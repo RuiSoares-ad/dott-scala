@@ -1,7 +1,5 @@
 package pt.dott.scala.calculator
 
-import java.lang.NumberFormatException
-
 import pt.dott.scala.entity.Order
 import pt.dott.scala.repository.OrdersRepository
 
@@ -15,7 +13,7 @@ class OrdersCalculator(lowerValue: String, higherValue:String, repository:Orders
 
    override def run(): Unit = {
      val periodOrders = repository.ordersBetween
-     calculateOrdersByInterval(periodOrders, lowerValue, higherValue)
+     resultCount = calculateOrdersByInterval(periodOrders, lowerValue, higherValue)
    }
 
   def calculateOrdersByInterval(periodOrders: List[Order], lowerValue:String, higherValue:String): Int = {
@@ -37,32 +35,28 @@ class OrdersCalculator(lowerValue: String, higherValue:String, repository:Orders
   }
 
   def validateMonths(startMonth: String, endMonth: String): Boolean = {
-    var valid = false
+
     try{
       startMonthAge = Integer.parseInt(startMonth)
       endMonthAge = Integer.parseInt(endMonth)
-      valid = true
+      true
     }catch{
-      case e: NumberFormatException =>
-        valid = false
+      case e: NumberFormatException => false
     }
 
-    valid
   }
 
   def validateMonthComparator(comparator: String, referenceMonth: String): Boolean = {
-    var valid:Boolean = true
+
     if(comparator.equals("<") || comparator.equals(">")){
       try{
         endMonthAge = Integer.parseInt(referenceMonth)
-        valid = true
+        true
       }catch{
-        case e: NumberFormatException => println("Insert a valid number")
-          valid = false
+        case e: NumberFormatException => false
 
       }
-    }
-    valid
+    } else {false}
 
   }
 

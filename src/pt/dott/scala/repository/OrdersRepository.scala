@@ -3,9 +3,7 @@ package pt.dott.scala.repository
 import java.time.LocalDateTime
 
 import pt.dott.scala.data.DataGenerator
-import pt.dott.scala.entity.{Item, Order, Product}
-
-import scala.collection.mutable.ListBuffer
+import pt.dott.scala.entity.Order
 
 class OrdersRepository(startDate: LocalDateTime, endDate: LocalDateTime){
 
@@ -16,57 +14,37 @@ class OrdersRepository(startDate: LocalDateTime, endDate: LocalDateTime){
 
 
   def getAllOrdersBetween(allOrders : List[Order], startDate: LocalDateTime, endDate: LocalDateTime) : List[Order] ={
-    val filteredOrders = ListBuffer[Order]()
-
-    for(order <- allOrders){
-      if(order.orderDate.isAfter(startDate) && order.orderDate.isBefore(endDate)){
-        filteredOrders.+=(order)
-      }
-    }
-
-    filteredOrders.toList
-
+    allOrders.toStream.filter(order => order.orderDate.isAfter(startDate) && order.orderDate.isBefore(endDate)).toList
   }
 
-  def getProductsByAgeInterval(filteredOrders: List[Order], intervalStart : Int, intervalEnd : Int) : List [Product] = {
-    val filteredProducts = ListBuffer[Product]()
+  def getProductsByAgeInterval(filteredOrders: List[Order], intervalStart : Int, intervalEnd : Int) : List [Order] = {
+    var resultOrders = List[Order]()
     val intervalStartDate = LocalDateTime.now().minusMonths(intervalStart)
     val intervalEndDate = LocalDateTime.now().minusMonths(intervalEnd)
 
     this.synchronized{
-      for(order <- filteredOrders){
-        for(item <- order.items){
-          if(item.product.creationDate.isBefore(intervalStartDate) && item.product.creationDate.isAfter(intervalEndDate)){
-            filteredProducts.+=(item.product)
-          }
-        }
-      }
+      resultOrders = filteredOrders.toStream.filter(order => order.items.toStream.
+        exists(item => item.product.creationDate.isBefore(intervalStartDate)&&item.product.creationDate.isAfter(intervalEndDate) )).toList
     }
 
-    filteredProducts.toList
+    resultOrders
   }
 
-  def getProductsOlderNewerThan(filteredOrders: List[Order], operator: String, startingPoint: Int) : List[Product] = {
-    val filteredProducts = ListBuffer[Product]()
+  def getProductsOlderNewerThan(filteredOrders: List[Order], operator: String, startingPoint: Int) : List[Order] = {
+    var resultOrders = List[Order]()
     val refDate = LocalDateTime.now().minusMonths(startingPoint)
 
     this.synchronized{
-      for(order<- filteredOrders){
-        for(item <- order.items){
-          if(operator.equals(">")){
-            if(item.product.creationDate.isBefore(refDate)){
-              filteredProducts.+=(item.product)
-            }
-          } else if(operator.equals("<")){
-            if(item.product.creationDate.isAfter(refDate)){
-              filteredProducts.+=(item.product)
-            }
-          }
-        }
+      if(operator.equals(">")){
+        resultOrders = filteredOrders.toStream.filter(order => order.items.toStream.
+          exists(item => item.product.creationDate.isBefore(refDate))).toList
+      } else if(operator.equals("<")){
+        resultOrders = filteredOrders.toStream.filter(order => order.items.toStream.
+          exists(item => item.product.creationDate.isAfter(refDate))).toList
       }
     }
 
-    filteredProducts.toList
+    resultOrders
 
   }
 
